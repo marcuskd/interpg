@@ -19,7 +19,7 @@ class TestInterpData(unittest.TestCase):
 
     def test_2d_x(self):
 
-        x_t = self.x_t**2
+        x_t = self.x_t ** 2
         y_t = self.y_t
         data_t = self.data_t[0]
 
@@ -41,7 +41,7 @@ class TestInterpData(unittest.TestCase):
     def test_2d_y(self):
 
         x_t = self.x_t
-        y_t = self.y_t**2
+        y_t = self.y_t ** 2
         data_t = self.data_t[1]
 
         y_int = numpy.min(numpy.diff(y_t))
@@ -61,7 +61,7 @@ class TestInterpData(unittest.TestCase):
 
     def test_2d_x_neg(self):
 
-        x_t = -(self.x_t**2)
+        x_t = -(self.x_t ** 2)
         y_t = self.y_t
         data_t = self.data_t[0]
 
@@ -85,7 +85,7 @@ class TestInterpData(unittest.TestCase):
     def test_2d_y_neg(self):
 
         x_t = self.x_t
-        y_t = -(self.y_t**2)
+        y_t = -(self.y_t ** 2)
         data_t = self.data_t[1]
 
         y_int = numpy.min(numpy.abs(numpy.diff(y_t)))
@@ -107,7 +107,7 @@ class TestInterpData(unittest.TestCase):
 
     def test_2d_x_rev(self):
 
-        x_t = numpy.flipud(self.x_t**2)
+        x_t = numpy.flipud(self.x_t ** 2)
         y_t = self.y_t
         data_t = self.data_t[1]
 
@@ -133,7 +133,7 @@ class TestInterpData(unittest.TestCase):
     def test_2d_y_rev(self):
 
         x_t = self.x_t
-        y_t = numpy.flipud(self.y_t**2)
+        y_t = numpy.flipud(self.y_t ** 2)
         data_t = self.data_t[1]
 
         y_int = numpy.min(numpy.abs(numpy.diff(y_t)))
@@ -157,7 +157,7 @@ class TestInterpData(unittest.TestCase):
 
     def test_3d_x_neg(self):
 
-        x_t = -(self.x_t**2)
+        x_t = -(self.x_t ** 2)
         y_t = self.y_t
         data_t = self.data_t
 
@@ -210,7 +210,7 @@ class TestInterpData(unittest.TestCase):
 
         data_t = numpy.random.rand(10, 100, 100)
         dims = data_t.shape
-        x_t = numpy.linspace(0, 100, dims[2])**2
+        x_t = numpy.linspace(0, 100, dims[2]) ** 2
         y_t = numpy.linspace(0, 100, dims[1])
 
         x_int = numpy.min(numpy.diff(x_t))
@@ -234,7 +234,7 @@ class TestInterpData(unittest.TestCase):
         data_t = numpy.random.rand(10, 100, 100)
         dims = data_t.shape
         x_t = numpy.linspace(0, 100, dims[2])
-        y_t = numpy.linspace(0, 100, dims[1])**2
+        y_t = numpy.linspace(0, 100, dims[1]) ** 2
 
         y_int = numpy.min(numpy.diff(y_t))
         npts = int(numpy.round(numpy.abs(y_t[-1] - y_t[0]) / y_int)) + 1
@@ -251,6 +251,48 @@ class TestInterpData(unittest.TestCase):
         self.assertTrue(numpy.array_equal(test_x_t, x_t))
         self.assertTrue(numpy.max(numpy.abs(test_y_t - y_t_i)) < self.tol)
         self.assertTrue(numpy.max(numpy.abs(test_data_t - data_c)) < self.tol)
+
+    def test_nearest_x(self):
+
+        x_t = numpy.array([0, 1, 2.3, 3.8, 5])
+        y_t = numpy.array([0., 1])
+        data_t = numpy.array([[10., 20, 30, 40, 50],
+                             [100., 200, 300, 400, 500]])
+
+        ref_x_t = numpy.array([0., 1, 2, 3, 4, 5])
+        ref_data_t = numpy.array([[10., 20, 30, 30, 40, 50],
+                                 [100., 200, 300, 300, 400, 500]])
+
+        test_x_t, test_y_t, test_data_t, _, _ = interp_data(x_t, y_t, data_t, nu_tol=1e-6, nearest=True)
+
+        self.assertTrue(numpy.array_equal(test_y_t, y_t))
+        self.assertTrue(numpy.max(numpy.abs(test_x_t - ref_x_t)) < self.tol)
+        self.assertTrue(numpy.max(numpy.abs(test_data_t - ref_data_t)) < self.tol)
+
+    def test_nearest_y(self):
+
+        x_t = numpy.array([0., 1])
+        y_t = numpy.array([0, 1, 2.3, 3.8, 5])
+
+        data_t = numpy.array([[10., 100.],
+                              [20, 200],
+                              [30, 300],
+                              [40, 400],
+                              [50, 500]])
+
+        ref_y_t = numpy.array([0., 1, 2, 3, 4, 5])
+        ref_data_t = numpy.array([[10., 100.],
+                                  [20, 200],
+                                  [30, 300],
+                                  [30, 300],
+                                  [40, 400],
+                                  [50, 500]])
+
+        test_x_t, test_y_t, test_data_t, _, _ = interp_data(x_t, y_t, data_t, nu_tol=1e-6, nearest=True)
+
+        self.assertTrue(numpy.array_equal(test_x_t, x_t))
+        self.assertTrue(numpy.max(numpy.abs(test_y_t - ref_y_t)) < self.tol)
+        self.assertTrue(numpy.max(numpy.abs(test_data_t - ref_data_t)) < self.tol)
 
 
 if __name__ == '__main__':

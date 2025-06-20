@@ -4,7 +4,7 @@ from interpg.interp_data import interp_data
 
 
 def interp_2d_line(x: numpy.array, y: numpy.array, f: numpy.ndarray, c_i: numpy.ndarray, z: numpy.array=None, ax_int: float=None,
-                   nearest: bool=False) -> tuple:
+                   nearest: bool=False, z_nearest: bool=False) -> tuple:
 
     """
     Performs 2D interpolation from a grid along a line.
@@ -20,6 +20,7 @@ def interp_2d_line(x: numpy.array, y: numpy.array, f: numpy.ndarray, c_i: numpy.
         z is the 1D axis array for the first dimension of f. If z is None or f is 2D, interpolation over z will not be performed.
         ax_int is the interval for interpolation over z. If equal to None, the minimum interval in z will be used for interpolation.
         nearest: on True use nearest-neighbour interpolation in x and y (the default is linear).
+        z_nearest: on True use nearest-neighbour interpolation in z (the default is linear).
     returns...
         f_i: Numpy 2D array with dimensions (I, M) if f is a 3D array, otherwise 1D array, length M. I = N if ax_int is None.
         z_i: Numpy array with new (or unchanged) z axis values.
@@ -81,8 +82,8 @@ def interp_2d_line(x: numpy.array, y: numpy.array, f: numpy.ndarray, c_i: numpy.
         f_i = _interp2D(out_dims, nc, c_i, xal, yal, xinc, nx, x.__array__().astype(float), yinc, ny, y.__array__().astype(float),
                         f.__array__().astype(float), nearest)
 
-    if z is not None:
-        _, z_i, f_i, _, _ = interp_data(numpy.arange(nc), z, f_i, ax_int=ax_int)
+    if is3d and (z is not None):
+        _, z_i, f_i, _, _ = interp_data(numpy.arange(nc), z, f_i, ax_int=ax_int, nearest=z_nearest)
     else:
         z_i = z
 

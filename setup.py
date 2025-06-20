@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='interpg',
-      version='1.0.0',
+      version='1.1.0',
       description='Fast bilinear interpolation of 2D or 3D gridded data along a line',
       author='Marcus Donnelly',
       author_email='marcus.k.donnelly@gmail.com',

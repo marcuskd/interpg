@@ -1,9 +1,9 @@
 import numpy
-from numba import njit, float64, prange
+from numba import njit, float64, prange, boolean
 from interpg.flip_data import flip_data
 
 
-def interp_data(x_t: numpy.array, y_t: numpy.array, data_t: numpy.ndarray, nu_tol: float=0, ax_int: float=None) -> tuple:
+def interp_data(x_t: numpy.array, y_t: numpy.array, data_t: numpy.ndarray, nu_tol: float=0, ax_int: float=None, nearest: bool=False) -> tuple:
 
     """
     Conduct uniform interpolation (if needed according to tolerance).
@@ -14,6 +14,7 @@ def interp_data(x_t: numpy.array, y_t: numpy.array, data_t: numpy.ndarray, nu_to
     kwargs...
         nu_tol: non-uniform tolerance value
         ax_int: interval for interpolation (if equal to None, the minimum interval along the interpolating axis will be used)
+        nearest: on True use nearest-neighbour interpolation in x and y (the default is linear).
     returns...
         x_t, y_t, data_t: either x_t or y_t made uniform, and data_t interpolated accordingly
         ax_int: updated interval for interpolation
@@ -89,10 +90,10 @@ def interp_data(x_t: numpy.array, y_t: numpy.array, data_t: numpy.ndarray, nu_to
 
     if is3d:
         data_t = _interp3D(data_t.__array__().astype(float), ax_v.__array__().astype(float), ax_v_i.__array__().astype(float),
-                           data_v.__array__().astype(float))
+                           data_v.__array__().astype(float), nearest)
     else:
         data_t = _interp2D(data_t.__array__().astype(float), ax_v.__array__().astype(float), ax_v_i.__array__().astype(float),
-                           data_v.__array__().astype(float))
+                           data_v.__array__().astype(float), nearest)
 
     # Reshape and re-transpose
 
@@ -133,8 +134,8 @@ def interp_data(x_t: numpy.array, y_t: numpy.array, data_t: numpy.ndarray, nu_to
     return x_t, y_t, data_t, ax_int, msg
 
 
-@njit(float64[:](float64[:, :], float64[:], float64[:], float64[:]), parallel=True)
-def _interp2D(data_t, ax_v, ax_v_i, data_v):
+@njit(float64[:](float64[:, :], float64[:], float64[:], float64[:], boolean), parallel=True)
+def _interp2D(data_t, ax_v, ax_v_i, data_v, nearest):
 
     nreps = int(data_t.size / ax_v.size)
     olen = ax_v.size
@@ -142,17 +143,31 @@ def _interp2D(data_t, ax_v, ax_v_i, data_v):
 
     data_t = numpy.zeros(ilen * nreps)
 
+    if nearest:
+        ni = ax_v_i.size
+        oinds = numpy.empty(ni, dtype=numpy.int64)
+        for oi in range(ni):
+            oinds[oi] = numpy.argmin(numpy.abs(ax_v_i[oi] - ax_v))
+    else:
+        oinds = numpy.empty(0, dtype=numpy.int64)
+        ni = 0
+
     for rep in prange(nreps):
 
         ostart = rep * olen
         istart = rep * ilen
-        data_t[istart:istart + ilen] = numpy.interp(ax_v_i, ax_v, data_v[ostart:ostart + olen])
+
+        if nearest:
+            for oi in range(ni):
+                data_t[istart + oi] = data_v[ostart + oinds[oi]]
+        else:
+            data_t[istart:istart + ilen] = numpy.interp(ax_v_i, ax_v, data_v[ostart:ostart + olen])
 
     return data_t
 
 
-@njit(float64[:](float64[:, :, :], float64[:], float64[:], float64[:]), parallel=True)
-def _interp3D(data_t, ax_v, ax_v_i, data_v):
+@njit(float64[:](float64[:, :, :], float64[:], float64[:], float64[:], boolean), parallel=True)
+def _interp3D(data_t, ax_v, ax_v_i, data_v, nearest):
 
     nreps = int(data_t.size / ax_v.size)
     olen = ax_v.size
@@ -160,10 +175,24 @@ def _interp3D(data_t, ax_v, ax_v_i, data_v):
 
     data_t = numpy.zeros(ilen * nreps)
 
+    if nearest:
+        ni = ax_v_i.size
+        oinds = numpy.empty(ni, dtype=numpy.int64)
+        for oi in range(ni):
+            oinds[oi] = numpy.argmin(numpy.abs(ax_v_i[oi] - ax_v))
+    else:
+        oinds = numpy.empty(0, dtype=numpy.int64)
+        ni = 0
+
     for rep in prange(nreps):
 
         ostart = rep * olen
         istart = rep * ilen
-        data_t[istart:istart + ilen] = numpy.interp(ax_v_i, ax_v, data_v[ostart:ostart + olen])
+
+        if nearest:
+            for oi in range(ni):
+                data_t[istart + oi] = data_v[ostart + oinds[oi]]
+        else:
+            data_t[istart:istart + ilen] = numpy.interp(ax_v_i, ax_v, data_v[ostart:ostart + olen])
 
     return data_t
